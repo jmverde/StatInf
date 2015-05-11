@@ -1,0 +1,179 @@
+---
+title: "Segunda semana"
+author: "JMV"
+date: "May 4, 2015"
+output: html_document
+---
+
+
+
+Ejemplito de la clase
+Calcula la desviaciones estandar de un monton de medias de normales con sigma 1
+
+debera tender a s/sqrt(n)
+
+```{r}
+nosim<-1000
+n<-10
+sd(apply(matrix(rnorm(nosim*n),nosim),1,mean))
+```
+
+y esto se podria hacer para cualquier distribucion 
+
+
+por ejemplo, con monedas, que tienen una varianza de 0.25  asi que se deberia aproximar a 1/2sqrt(n)
+
+
+
+
+
+```{r}
+nosim<-1000
+n<-10
+sd(apply(matrix(sample(0:1,nosim*n,replace=T),nosim),1,mean))
+```
+
+
+
+
+Uso de la bunomial 
+
+pbinom() 
+
+Calcular la probabilidad de tener en 8 hijos 7 nignaas o mas (que el mamon de la clase lo ha puesto con el culo) 
+
+se pone el 6 por que es hasta 6 y despues el lower.tail=F para que calcule el X>x
+```{r}
+pbinom(6,8,.5,lower.tail = F)
+```
+
+
+----------------------------------------------
+
+Ejemplos de uso del teorema del limite central
+----------------------------------
+
+
+Simular una normal estandar usando dados de seis caras (con dos cojones)
+
+los dados tienen mu =3.5
+
+la varianza es 2.92
+
+la media tendra un error de medida de 1.71/sqrt(n) 
+
+si tiramos n dados, hacemos la media, restamos 3.5 y dividimos por el error deberia tender a una normal  
+
+
+
+
+```{r}
+library(lattice)
+nosim<-10000
+n<-10
+res<-apply(matrix(sample(1:6,nosim*n,replace=T),nosim),1,mean)
+histogram(res)
+resn<-(res-3.5)/sqrt(n)
+histogram(resn)
+```
+
+
+Podemos meterle mas cagna y hacer 100 lanzamientos por vez, y se va aproximando a una normal
+
+
+```{r}
+library(lattice)
+nosim<-10000
+n<-100
+res<-apply(matrix(sample(1:6,nosim*n,replace=T),nosim),1,mean)
+histogram(res,nint=20)
+resn<-(res-3.5)/sqrt(n)
+histogram(resn,nint=20)
+```
+
+Un ejemplito para hacer multiples tests 
+vamos a usar una simulacion cambiando los valores de p metidos en pvals
+estimamos p a partir de la media y calculamos a ver cuantas veces se falla en que el valor calculado con su margen de confianza deja dentro fuera el p verdadero
+
+
+```{r}
+n<-20
+pvals<- seq(0.1,0.9, by =0.05)
+nosim<-1000
+coverage<-sapply(pvals,function(p){
+    phats<-rbinom(nosim,prob=p,size=n)/n
+    ll<-phats-qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    ul<-phats+qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    mean(ll<p & ul >p)
+})
+plot (pvals,coverage,type="b")
+```
+
+Se ve que la estimacion es bastante mejor para p en torno a 0,5 y en general parece que n es demasiado peque??o 
+
+Fix bruto: subimos n y se ve que mejora bastante 
+
+```{r}
+n<-200
+pvals<- seq(0.1,0.9, by =0.05)
+nosim<-1000
+coverage<-sapply(pvals,function(p){
+    phats<-rbinom(nosim,prob=p,size=n)/n
+    ll<-phats-qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    ul<-phats+qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    mean(ll<p & ul >p)
+})
+plot (pvals,coverage,type="b")
+```
+
+Fix mas elegante 
+sumamos 2 al total de monedas sacadas y 4 al n total, esto se denomina intervalo de Agresti /Coull
+
+```{r}
+n<-20
+pvals<- seq(0.1,0.9, by =0.05)
+nosim<-1000
+coverage<-sapply(pvals,function(p){
+    phats<-(rbinom(nosim,prob=p,size=n)+2)/(n+4)
+    ll<-phats-qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    ul<-phats+qnorm(0.975)*sqrt(phats*(1-phats)/n)
+    mean(ll<p & ul >p)
+})
+plot (pvals,coverage,type="b")
+```
+
+
+
+
+Vamos a hacer lo mismo simulando una distro de poisson
+
+
+```{r}
+lambdavals<- seq(0.005,0.1, by =0.01)
+nosim<-1000
+t<-100
+coverage<-sapply(lambdavals,function(lambda){
+    lhats<-rpois(nosim,lambda = lambda*t)/t
+    ll<-lhats-qnorm(0.975)*sqrt(lhats/t)
+    ul<-lhats+qnorm(0.975)*sqrt(lhats/t)
+    mean(ll<lambda & ul >lambda)
+})
+plot (lambdavals,coverage,type="b")
+```
+
+Posiblemente t sea demasiado peque??o  (en realidad el problema es el producto lambra + t)  por que hay pocos eventos 
+
+con t =1000 mejora mucho
+
+```{r}
+lambdavals<- seq(0.005,0.1, by =0.01)
+nosim<-1000
+t<-1000
+coverage<-sapply(lambdavals,function(lambda){
+    lhats<-rpois(nosim,lambda = lambda*t)/t
+    ll<-lhats-qnorm(0.975)*sqrt(lhats/t)
+    ul<-lhats+qnorm(0.975)*sqrt(lhats/t)
+    mean(ll<lambda & ul >lambda)
+})
+plot (lambdavals,coverage,type="b")
+```
