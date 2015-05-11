@@ -5,4 +5,151 @@ date: "May 11, 2015"
 output: html_document
 ---
 
+ejemplo t interval
+-------------------
+
+usamos los datos de drogas de suegno (los originales de gooset)
+
+```{r}
+data (sleep)
+head(sleep)
+```
+
+son 10 tipos, y las id del tipo nm  es el sujeto m en la medida n, son 2 medidas, una para cada medicacion 
+
+```{r}
+g1<-sleep$extra[1:10];g2<-sleep$extra[11:20]
+difference<-g2-g1
+mn <-mean(difference); s<- sd(difference); n<-10
+
+```
+
+
+El intervalo de coinfianza quedaria dado por 
+
+```{r}
+mn+c(-1,1)*qt(.975,n-1)*s/sqrt(n)
+```
+
+Y aqui todas estas son equivalentes
+
+```{r}
+t.test(difference)
+t.test(g2,g1,paired=T)
+t.test(extra ~ I(relevel(group,2)),paired=T,data=sleep)
+```
+
+
+
+
+Independent groups, por ejemplo separar un placebo de la medicina de verdad
+
+Se supone 8 oc (anticonceptivos ya que nos ponemos) vs 21 controles,  presion sanguinea
+
+Xoc=132.86    Soc=15.34
+Xc=127.44     Sc = 18.23 
+
+pooled estimated variance
+
+```{r}
+sp <- sqrt((7*15.34^2+20*18.23^2)/(21+8-2))
+```
+
+
+y el intervalo de confianza
+
+```{r}
+132.86-127.44+c(-1,1)*qt(.975,27)*sp*sqrt(1/8+1/21)
+```
+
+
+
+Vamos a ver que pasa si analizamos los datos de suegno en vez de como paired como agrupados (no se hacen las diferencias par a par sino a traves de medias)
+
+```{r}
+n1<- length(g1); n2<- length (g2)
+
+sp <- sqrt( ( (n1-1)*sd(g1)^2+(n2-1)*sd(g2)^2)/(n1+n2-2))
+md<- mean(g2)-mean(g1) 
+semd <-sp*sqrt(1/n1+1/n2)
+```
+
+El intervalo de confianza es 
+
+```{r}
+md + c(-1,1)*qt(.975,n1+n2-2)*semd
+```
+
+otra forma de sacarlo
+
+```{r}
+t.test(g2,g1,paired=F,var.equal=T)
+```
+
+
+En vez de lo que teniamos antes
+
+```{r}
+t.test(g2,g1,paired=T)
+```
+
+y la putada es que ya no es estadisticamente significativo 
+
+
+--------------------------
+
+
+Otro ejemplete
+
+que lo hago mas que nada para seguir mamoneando con el r por que me aburro
+
+datos de peso de pollo en diversos momentos de su vida
+
+```{r}
+library(datasets)
+data(ChickWeight) 
+library(reshape2)
+
+```
+
+Despues de esto lo casteamos para 
+
+
+```{r}
+wideCW<-dcast(ChickWeight,Diet+Chick~Time,value.var = "weight")
+```
+
+Asi se dejan Diet y Chick como estaban (variables con valores,  time se convierte para cada valor en una nueva columna, y se rellena la tabla con los valores de peso, asi podremos sacar los valores de peso para cada fecha y sacar por dieta y pollo)
+
+Le ponemos nombres cucos a las variables que antes tenian por nombre solo el numero del dia
+
+```{r}
+names(wideCW)[-(1:2)]<-paste("time", names(wideCW[-(1:2)]),sep="")
+```
+
+Ahora para crear una columna con las diferencias entre dos dias al nacer y el 21 (que me da que es cuando les dan matarile) usamos dplyr
+
+```{r}
+library(dplyr)
+
+wideCW<-mutate(wideCW,gain=time21-time0)
+```
+
+
+Vamos a comparar la dieta 1 con la 4 asi que
+
+```{r}
+wideCW14<- subset(wideCW,Diet %in% c(1,4))
+```
+
+
+Comparamos los intervalos suponiendo que las sigmas son iguales o distintas
+
+```{r}
+rbind(
+    
+    t.test(gain~Diet, paired=F,var.equal = T,data=wideCW14)$conf,
+    t.test(gain~Diet, paired=F,var.equal = F,data=wideCW14)$conf
+    )
+```
 
