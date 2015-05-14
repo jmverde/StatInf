@@ -2,7 +2,7 @@
 title: "Tercera Semana"
 author: "JMV"
 date: "May 11, 2015"
-output: html_document
+output: pdf_document
 ---
 
 ejemplo t interval
@@ -152,4 +152,67 @@ rbind(
     t.test(gain~Diet, paired=F,var.equal = F,data=wideCW14)$conf
     )
 ```
+
+
+
+T test
+==========
+
+
+Cargamos los datos y hacemos un t test 
+se hace una resta por que los datos son paired  seria lo mismo que pasar los dos vectores y un paired = T
+
+el t value es el punto en el que estaria de la distribucion
+
+```{r}
+library(UsingR)
+data(father.son)
+t.test(father.son$sheight - father.son$fheight)
+```
+
+
+
+T test de dos grupos
+
+recuperamos los datos de los pollos
+
+
+
+
+```{r}
+library(datasets)
+data(ChickWeight) 
+library(reshape2)
+
+
+wideCW<-dcast(ChickWeight,Diet+Chick~Time,value.var = "weight")
+
+names(wideCW)[-(1:2)]<-paste("time", names(wideCW[-(1:2)]),sep="")
+
+library(dplyr)
+
+wideCW<-mutate(wideCW,gain=time21-time0)
+```
+
+
+Nos quedamos de nuevo solo con las dietas 1 y 4
+
+```{r}
+wideCW14<- subset(wideCW,Diet %in% c(1,4))
+```
+ 
+ 
+ y hacemos el t test
+ 
+ 
+```{r}
+t.test(gain~Diet, paired =F, var.equal = T, data=wideCW14)
+```
+
+
+
+P Values
+-----------
+
+
 
